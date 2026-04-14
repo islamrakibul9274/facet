@@ -1,36 +1,102 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+-----
 
-## Getting Started
+# ⬛ ANTIGRAVITY // Obsidian Neural Node
 
-First, run the development server:
+A high-performance, interactive 3D application merging real-time computer vision with high-end WebGL shaders. This project features a custom 3-layer glassmorphism architecture, browser-based AI face tracking, and a highly optimized render loop for a dynamic physical interface that reacts instantly to user presence.
+
+## 🚀 Live Links
+
+  * **Production Application (Vercel):** [https://antigravity-obsidian.vercel.app/](https://antigravity-obsidian.vercel.app/)
+
+-----
+
+## ✨ Key Features
+
+### 🧠 AI & Performance Features
+
+  * **Real-Time Edge AI:** On-device computer vision using a quantized YOLOv8 model executing entirely in a background Web Worker via WebAssembly.
+  * **Silent State Updates:** A custom architecture that bypasses destructive React re-renders, feeding AI tracking data directly into the Three.js 60FPS render loop via Zustand.
+  * **Interactive Neural Tracking:** The 3D obsidian node physically tracks, tilts, and locks onto the user's facial coordinates in real-time without lagging the UI thread.
+
+### 💎 3D & Shader Features
+
+  * **3-Layer Glassmorphism Architecture:** A deeply nested material system prioritizing high-end reflections and depth.
+  * **The Obsidian Core:** A perfectly reflective, pitch-black inner physical mesh acting as a deep mirror inside the glass.
+  * **Reactive Data Shell:** Custom mathematical shaders that draw razor-sharp white borders in idle state, and ignite into a liquid **Light Blue to Deep Blue** HDR plasma wave upon detection.
+  * **Cinematic Post-Processing:** Integrated HDR Bloom, Vignette, and Sporadic Glitch effects precisely synchronized to the AI's detection state.
+
+-----
+
+## 💻 Tech Stack
+
+**Frontend & Framework:**
+
+  * Next.js 15 (App Router & Turbopack)
+  * React.js & TypeScript
+  * Tailwind CSS (UI & Typography)
+  * Zustand (Global State Management)
+
+**3D Engine & Post-Processing:**
+
+  * Three.js & React Three Fiber
+  * React Three Drei
+  * `@react-three/postprocessing`
+
+**Computer Vision:**
+
+  * ONNX Runtime Web (`onnxruntime-web`)
+  * YOLOv8n (Quantized Neural Network)
+
+-----
+
+## 🛠 Local Setup Instructions
+
+### 1. Prerequisites
+
+  * Node.js (v18 or higher)
+  * A modern browser with WebGL and Camera support
+
+### 2. Clone the Repository
+
+```bash
+git clone [https://github.com/islamrakibul9274/antigravity-obsidian.git](https://github.com/islamrakibul9274/antigravity-obsidian.git)
+cd antigravity-obsidian
+
+### 3. Install Dependencies
+
+```bash
+npm install
+```
+
+### 4\. Neural Model Configuration
+
+Ensure the quantized AI model is correctly placed so the Web Worker can locate it:
+Create a `models` folder inside your `public` directory and place your `.onnx` file there:
+`public/models/yolov8n.onnx`
+
+### 5\. Start the Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](https://www.google.com/search?q=http://localhost:3000) with your browser to see the result. *Note: You must grant camera permissions for the neural tracking to initialize.*
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+-----
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## ⚙️ Production Deployment
 
-## Learn More
+This application is fully optimized for static deployment on Vercel. The ONNX model is served as a static asset for fast loading. **Note:** Modern browsers require a secure `https://` connection (provided automatically by Vercel) to grant webcam access for the YOLOv8 tracking engine.
 
-To learn more about Next.js, take a look at the following resources:
+-----
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 👤 Author
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Rakibul Islam Rumel**
 
-## Deploy on Vercel
+  * GitHub: [@islamrakibul9274](https://www.google.com/search?q=https://github.com/islamrakibul9274)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+-----
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+```
