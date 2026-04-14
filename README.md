@@ -61,6 +61,7 @@ A high-performance, interactive 3D application merging real-time computer vision
 ```bash
 git clone [https://github.com/islamrakibul9274/antigravity-obsidian.git](https://github.com/islamrakibul9274/antigravity-obsidian.git)
 cd antigravity-obsidian
+```
 
 ### 3. Install Dependencies
 
