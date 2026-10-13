@@ -2,7 +2,7 @@
 
 > A real-time interactive optical study merging on-device computer vision with physical volcanic glass simulation and WebGL shaders.
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-Facet_Online-38bdf8?style=for-the-badge&logo=vercel)](https://antigravity-obsidian.vercel.app/)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Facet_Online-38bdf8?style=for-the-badge&logo=vercel)](https://facet-glass.vercel.app/)
 [![Next.js 16](https://img.shields.io/badge/Next.js_16-Turbopack-white?style=for-the-badge&logo=nextdotjs)](https://nextjs.org/)
 [![Three.js](https://img.shields.io/badge/Three.js-R3F-black?style=for-the-badge&logo=three.js)](https://threejs.org/)
 [![YOLO26n](https://img.shields.io/badge/Vision_Engine-YOLO26n_WASM-emerald?style=for-the-badge)](https://github.com/ultralytics/ultralytics)
@@ -13,8 +13,9 @@
 
 Experience the live interactive 3D sculpture in your browser:
 
-* **Production URL:** [https://antigravity-obsidian.vercel.app/](https://antigravity-obsidian.vercel.app/)
-* **Direct Deployment Mirror:** [https://antigravity-obsidian-pw32p1hoa-rumel9274-6063s-projects.vercel.app/](https://antigravity-obsidian-pw32p1hoa-rumel9274-6063s-projects.vercel.app/)
+* **Primary Production URL:** [https://facet-glass.vercel.app/](https://facet-glass.vercel.app/)
+* **Alternative Mirror:** [https://facet-interactive.vercel.app/](https://facet-interactive.vercel.app/)
+* **Legacy Alias:** [https://antigravity-obsidian.vercel.app/](https://antigravity-obsidian.vercel.app/)
 
 > **Tip**: Grant camera access to enable real-time spatial YOLO26 tracking. When camera access is disabled or unavailable, the system automatically falls back to smooth cursor/mouse parallax orientation.
 
