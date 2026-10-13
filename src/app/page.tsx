@@ -2,71 +2,59 @@
 
 import { View } from "@/components/3d/View";
 import { Scanner } from "@/components/ui/Scanner";
+import { CommandDock } from "@/components/ui/CommandDock";
+import { Header } from "@/components/ui/Header";
+import { Inspector } from "@/components/ui/Inspector";
 import { useStore } from "@/store/useStore";
 
 export default function Home() {
-  // We only subscribe to camera states here.
-  // This keeps the Parent component from re-rendering and blinking the camera feed.
   const isCameraOn = useStore((state) => state.isCameraOn);
-  const toggleCamera = useStore((state) => state.toggleCamera);
+  const latency = useStore((state) => state.inferenceLatency);
 
   return (
-    <main 
-      suppressHydrationWarning 
-      className="relative h-screen w-full bg-black overflow-hidden"
+    <main
+      suppressHydrationWarning
+      className="relative w-full max-w-full h-[100dvh] bg-[#030305] overflow-x-hidden overflow-y-hidden select-none flex justify-center"
     >
-      {/* 1. HUD OVERLAY LAYER (Static White Design) */}
-      <div className="absolute inset-0 z-10 flex flex-col justify-between p-16 pointer-events-none">
-        
-        {/* TOP SECTION: Header remains clean white/gray as requested */}
-        <div className="space-y-2">
-          <h1 className="text-6xl font-black italic tracking-tighter text-white">
-            ANTIGRAVITY <span className="opacity-40">OBSIDIAN</span>
-          </h1>
+      {/* 1. Fullscreen WebGL Three.js Canvas Backdrop */}
+      <View />
 
-          <div className="flex items-center gap-3">
-            <div className="h-px w-8 bg-white/20" />
-            <p className="text-[10px] font-mono tracking-widest uppercase text-white/50">
-              Neural_Engine // Active_Sync
-            </p>
-          </div>
+      {/* 2. Responsive Application Stage (Fluid width up to max-w-7xl with standard responsive padding) */}
+      <div className="relative z-20 w-full max-w-7xl h-full mx-auto px-4 sm:px-6 md:px-8 lg:px-12 pt-6 sm:pt-8 md:pt-10 lg:pt-12 pb-6 sm:pb-8 md:pb-10 lg:pb-12 flex flex-col justify-between pointer-events-none">
+        
+        {/* TOP: Header with Generous Breathing Room */}
+        <div className="w-full pointer-events-auto">
+          <Header />
         </div>
 
-        {/* BOTTOM SECTION: Telemetry & Interactive Controls */}
-        <div className="flex justify-between items-end border-t border-white/10 pt-8">
-          {/* Left Side: Mock Location Data */}
-          <div className="font-mono text-[9px] text-white/30 space-y-1">
-            <p>LAT: 23.8103° N</p>
-            <p>LONG: 90.4125° E</p>
-            <p>LOC: DHAKA_BD</p>
+        {/* CENTER STAGE: 3D Focal Space */}
+        <div className="flex-1 relative flex items-center justify-center pointer-events-none" />
+
+        {/* BOTTOM: Responsive Control Bar */}
+        <div className="w-full relative pointer-events-auto flex flex-col sm:flex-row items-center sm:items-end justify-between gap-4">
+          {/* Left Slot: Camera Scanner Capsule (Fluid docking) */}
+          <div className="sm:absolute sm:left-0 sm:bottom-0 z-30 pointer-events-auto w-full sm:w-auto flex justify-center sm:justify-start">
+            <Scanner />
           </div>
 
-          {/* Right Side: AI Controls (Only part that reacts here) */}
-          <div className="text-right font-mono text-[9px] text-white/30 space-y-4 pointer-events-auto">
-            <button
-              onClick={toggleCamera}
-              className={`px-5 py-2.5 border font-bold tracking-widest transition-all active:scale-90 cursor-pointer ${
-                isCameraOn 
-                  ? 'bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]' 
-                  : 'bg-transparent text-white border-white/20 hover:border-white'
-              }`}
-            >
-              {isCameraOn ? '[ NEURAL_OFFLINE ]' : '[ NEURAL_LINK_START ]'}
-            </button>
-            <div className="opacity-50">
-              <p>SYSTEM_LINK: STABLE</p>
-              <p>© 2026 // AG_LABS</p>
+          {/* Center Slot: Symmetrical Command Dock Centered with Auto Margin (mx-auto) */}
+          <div className="w-full flex justify-center mx-auto z-20 pointer-events-auto">
+            <CommandDock />
+          </div>
+
+          {/* Right Slot: Technical Telemetry & Spatial Specs (Desktop / Tablet) */}
+          <div className="sm:absolute sm:right-0 sm:bottom-0 z-30 hidden md:flex items-center pointer-events-auto">
+            <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono tracking-wider px-3 py-1.5 rounded-full bg-zinc-950/70 backdrop-blur-md border border-white/5 shadow-sm">
+              <span>{isCameraOn ? `${latency || 12}MS` : "CURSOR"}</span>
+              <span className="text-white/15">&bull;</span>
+              <span>RESPONSIVE</span>
             </div>
           </div>
         </div>
+
+        {/* Floating Inspector Panel (Responsive anchor) */}
+        <Inspector />
       </div>
-
-      {/* 2. 3D BACKGROUND LAYER (Handles the Purple Neon Tracing) */}
-      <View />
-
-      {/* 3. AI SCANNER LAYER (Stable/No-Blink) */}
-      <Scanner />
-
     </main>
   );
 }
