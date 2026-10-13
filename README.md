@@ -2,10 +2,21 @@
 
 > A real-time interactive optical study merging on-device computer vision with physical volcanic glass simulation and WebGL shaders.
 
-[![Live Demo](https://img.shields.io/badge/Demo-Facet_Live-38bdf8?style=for-the-badge&logo=vercel)](https://antigravity-obsidian.vercel.app/)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Facet_Online-38bdf8?style=for-the-badge&logo=vercel)](https://antigravity-obsidian.vercel.app/)
 [![Next.js 16](https://img.shields.io/badge/Next.js_16-Turbopack-white?style=for-the-badge&logo=nextdotjs)](https://nextjs.org/)
 [![Three.js](https://img.shields.io/badge/Three.js-R3F-black?style=for-the-badge&logo=three.js)](https://threejs.org/)
 [![YOLO26n](https://img.shields.io/badge/Vision_Engine-YOLO26n_WASM-emerald?style=for-the-badge)](https://github.com/ultralytics/ultralytics)
+
+---
+
+## 🌐 Live Application
+
+Experience the live interactive 3D sculpture in your browser:
+
+* **Production URL:** [https://antigravity-obsidian.vercel.app/](https://antigravity-obsidian.vercel.app/)
+* **Direct Deployment Mirror:** [https://antigravity-obsidian-pw32p1hoa-rumel9274-6063s-projects.vercel.app/](https://antigravity-obsidian-pw32p1hoa-rumel9274-6063s-projects.vercel.app/)
+
+> **Tip**: Grant camera access to enable real-time spatial YOLO26 tracking. When camera access is disabled or unavailable, the system automatically falls back to smooth cursor/mouse parallax orientation.
 
 ---
 
@@ -40,8 +51,9 @@
   - **Amber**: Warm cognac champagne
 
 ### 3. Clean Modern UI
-- Segmented geometry switchers with clean flex spacing and no overlapping elements.
-- Recessed color swatches that stay within bounds.
+- Responsive layout designed for mobile, tablet, and widescreen displays.
+- Floating command dock with unified heights, zero overflow, and comfortable padding.
+- Contained color swatches with inset active rings that stay strictly within bounds.
 - Subtle, optional camera preview with hairline face tracking frame.
 - Unobtrusive sound feedback via Web Audio API.
 
@@ -49,10 +61,10 @@
 
 ## Tech Stack
 
-- **Framework**: Next.js 16 (App Router, Turbopack)
-- **3D & Shaders**: Three.js, React Three Fiber, React Three Drei, Postprocessing
-- **Computer Vision**: ONNX Runtime Web (`onnxruntime-web`), YOLO26n End-to-End
-- **State Management**: Zustand
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router, Turbopack)
+- **3D & Shaders**: Three.js, [React Three Fiber](https://r3f.docs.pmnd.rs/), React Three Drei, Postprocessing
+- **Computer Vision**: [ONNX Runtime Web](https://onnxruntime.ai/), YOLO26n End-to-End
+- **State Management**: [Zustand](https://github.com/pmndrs/zustand)
 - **Styling**: Tailwind CSS v4, Lucide Icons
 
 ---
