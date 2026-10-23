@@ -1046,10 +1046,10 @@ button svg {
     margin-top: 16px;
   }
   .intro h1 br {
-    display: none;
+    display: block;
   }
   .intro h1 em {
-    margin-left: 10px;
+    margin-left: 0;
     letter-spacing: -3px;
   }
   .intro .eyebrow {
@@ -1244,7 +1244,7 @@ button svg {
   }
   .intro h1 em {
     letter-spacing: -2.8px;
-    margin-left: 6px;
+    margin-left: 0;
   }
   .studio-panel {
     padding: 17px;
