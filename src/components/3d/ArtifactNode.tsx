@@ -1,304 +1,305 @@
 "use client";
 
-import { useFrame, useThree } from "@react-three/fiber";
-import { useRef, useMemo, useEffect } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { useStore, THEME_PALETTES, ArtifactType } from "@/store/useStore";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { ArtifactType, THEME_PALETTES, useStore } from "@/store/useStore";
 
-// Ambient stardust around the sculpture that energizes on face detection
-function AmbientDust({ count = 350, isAwake = false }: { count?: number; isAwake?: boolean }) {
-  const pointsRef = useRef<THREE.Points>(null);
-  const colorTheme = useStore((state) => state.colorTheme);
-  const palette = THEME_PALETTES[colorTheme];
+const ARTIFACTS: ArtifactType[] = ["cube", "crystal", "torus", "pillar"];
+const REST_ROTATION: Record<ArtifactType, [number, number, number]> = {
+  cube: [0.34, 0.58, -0.08],
+  crystal: [0.1, 0.28, -0.15],
+  torus: [0.28, 0.18, -0.4],
+  pillar: [0.08, 0.3, -0.24],
+};
 
-  const positions = useMemo(() => {
-    const pos = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      const r = 2.8 + Math.random() * 4.5;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-
-      pos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-      pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-      pos[i * 3 + 2] = r * Math.cos(phi);
+/** A cut mineral: broad crown facets, a substantial girdle and a pointed base. */
+function createCrystal() {
+  const sides = 8;
+  const vertices: number[] = [];
+  const rings = [
+    { y: 1.46, radius: 0.46, offset: 0 },
+    { y: 0.72, radius: 1.16, offset: 0 },
+    { y: -0.22, radius: 1.2, offset: 0 },
+    { y: -1.15, radius: 0.52, offset: Math.PI / 8 },
+  ];
+  const point = (ring: number, side: number): [number, number, number] => {
+    const { y, radius, offset } = rings[ring];
+    const angle = (side / sides) * Math.PI * 2 + offset;
+    return [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
+  };
+  const triangle = (a: number[], b: number[], c: number[]) =>
+    vertices.push(...a, ...b, ...c);
+  for (let side = 0; side < sides; side++) {
+    triangle([0, 1.46, 0], point(0, side + 1), point(0, side));
+    for (let ring = 0; ring < rings.length - 1; ring++) {
+      triangle(point(ring, side), point(ring, side + 1), point(ring + 1, side));
+      triangle(
+        point(ring, side + 1),
+        point(ring + 1, side + 1),
+        point(ring + 1, side),
+      );
     }
-    return pos;
-  }, [count]);
+    triangle(point(3, side), point(3, side + 1), [0, -1.7, 0]);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(vertices, 3),
+  );
+  geometry.computeVertexNormals();
+  return geometry;
+}
 
-  useFrame((state) => {
-    if (!pointsRef.current) return;
-    const t = state.clock.getElapsedTime();
-    // Double orbit speed when awake
-    const speed = isAwake ? 0.08 : 0.02;
-    pointsRef.current.rotation.y = t * speed;
-    pointsRef.current.rotation.x = Math.sin(t * speed * 0.5) * 0.15;
-  });
+/** Continuous flutes wind around the column; the silhouette is tapered at both ends. */
+function createPillar() {
+  const radial = 128;
+  const height = 80;
+  const vertices: number[] = [];
+  const indices: number[] = [];
+  for (let row = 0; row <= height; row++) {
+    const v = row / height;
+    const y = (v - 0.5) * 3.35;
+    const taper = 0.86 + Math.sin(v * Math.PI) * 0.14;
+    for (let column = 0; column <= radial; column++) {
+      const angle = (column / radial) * Math.PI * 2;
+      const radius = (0.78 + Math.cos(angle * 16 - y * 5.4) * 0.055) * taper;
+      vertices.push(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
+      if (row < height && column < radial) {
+        const a = row * (radial + 1) + column;
+        const b = a + radial + 1;
+        indices.push(a, b, a + 1, a + 1, b, b + 1);
+      }
+    }
+  }
+  const bottom = vertices.length / 3;
+  vertices.push(0, -1.675, 0, 0, 1.675, 0);
+  for (let column = 0; column < radial; column++) {
+    indices.push(bottom, column, column + 1);
+    const top = height * (radial + 1) + column;
+    indices.push(bottom + 1, top + 1, top);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(vertices, 3),
+  );
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
 
-  return (
-    <points ref={pointsRef}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-      </bufferGeometry>
-      <pointsMaterial
-        size={isAwake ? 0.045 : 0.025}
-        color={palette.start}
-        transparent
-        opacity={isAwake ? 0.75 : 0.3}
-        blending={THREE.AdditiveBlending}
-        depthWrite={false}
-      />
-    </points>
+function createCubeInlay() {
+  const points: THREE.Vector3[] = [];
+  const radius = 0.17;
+  const half = 1.104;
+  for (let corner = 0; corner < 4; corner++) {
+    const angle = (corner * Math.PI) / 2;
+    const cx =
+      Math.cos(angle + Math.PI / 4) > 0 ? half - radius : -half + radius;
+    const cz =
+      Math.sin(angle + Math.PI / 4) > 0 ? half - radius : -half + radius;
+    for (let step = 0; step <= 12; step++) {
+      const theta = angle + ((step / 12) * Math.PI) / 2;
+      points.push(
+        new THREE.Vector3(
+          cx + Math.cos(theta) * radius,
+          -0.36,
+          cz + Math.sin(theta) * radius,
+        ),
+      );
+    }
+  }
+  return new THREE.TubeGeometry(
+    new THREE.CatmullRomCurve3(points, true, "centripetal"),
+    128,
+    0.007,
+    6,
+    true,
   );
 }
 
-// Procedural internal light vein shaders
-const veinVertexShader = `
-  varying vec2 vUv;
-  varying vec3 vPos;
-  varying vec3 vNormal;
-  
-  void main() {
-    vUv = uv;
-    vPos = position;
-    vNormal = normalize(normalMatrix * normal);
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`;
+function Specimen({
+  type,
+  geometry,
+  inlay,
+}: {
+  type: ArtifactType;
+  geometry: THREE.BufferGeometry;
+  inlay: THREE.BufferGeometry;
+}) {
+  const activeArtifact = useStore((state) => state.activeArtifact);
+  const colorTheme = useStore((state) => state.colorTheme);
+  const group = useRef<THREE.Group>(null);
+  const material = useRef<THREE.MeshPhysicalMaterial>(null);
+  const inlayMaterial = useRef<THREE.MeshStandardMaterial>(null);
+  const scale = useRef(activeArtifact === type ? 1 : 0);
+  const palette = THEME_PALETTES[colorTheme];
+  const targetColor = useMemo(() => {
+    const mineral = new THREE.Color(type === "crystal" ? "#9bafa5" : "#78877f");
+    return mineral.lerp(
+      new THREE.Color(palette.start),
+      type === "crystal" ? 0.68 : 0.55,
+    );
+  }, [palette.start, type]);
+  const accent = useMemo(() => new THREE.Color(palette.start), [palette.start]);
 
-const veinFragmentShader = `
-  varying vec2 vUv;
-  varying vec3 vPos;
-  varying vec3 vNormal;
-  
-  uniform float time;
-  uniform float intensity;
-  uniform vec3 colorStart;
-  uniform vec3 colorEnd;
-  uniform vec3 colorAccent;
-
-  void main() {
-    // Multi-frequency wave flow
-    float w1 = sin(vPos.x * 3.0 - time * 5.0) * cos(vPos.y * 3.2 + time * 4.0);
-    float w2 = sin((vPos.y * 2.5 + vPos.z * 2.5) * 2.0 + time * 4.5);
-    float fluid = (w1 + w2) * 0.5;
-
-    // Razor-sharp edge contours
-    float edgeX = min(vUv.x, 1.0 - vUv.x);
-    float edgeY = min(vUv.y, 1.0 - vUv.y);
-    float edgeDist = min(edgeX, edgeY);
-    float edgeLine = smoothstep(0.03, 0.008, edgeDist);
-
-    vec3 viewDir = normalize(-vPos);
-    float fresnel = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 2.2);
-
-    vec3 baseColor = mix(colorStart, colorEnd, vUv.y * 0.7 + 0.15);
-    vec3 activeColor = mix(baseColor, colorAccent, clamp(fluid * 0.6 + 0.4, 0.0, 1.0));
-
-    if (intensity > 0.05) {
-      // VIBRANT HDR IGNITION ON DETECTION
-      vec3 finalRgb = activeColor * (2.8 + fluid * 1.5) * intensity;
-      finalRgb += colorStart * edgeLine * 4.0 * intensity;
-      finalRgb += colorAccent * fresnel * 2.5 * intensity;
-
-      float alpha = clamp((fluid * 0.5 + edgeLine * 0.8 + fresnel * 0.6) * intensity, 0.0, 0.95);
-      gl_FragColor = vec4(finalRgb, alpha);
-    } else {
-      // Minimal cool glass edge reflection when idle
-      float idleAlpha = edgeLine * 0.3 + fresnel * 0.18;
-      if (idleAlpha < 0.02) discard;
-      gl_FragColor = vec4(vec3(0.7, 0.8, 0.95), idleAlpha * 0.65);
+  useFrame((_, delta) => {
+    if (!group.current || !material.current) return;
+    const dt = Math.min(delta, 0.05);
+    scale.current = THREE.MathUtils.damp(
+      scale.current,
+      activeArtifact === type ? 1 : 0,
+      8,
+      dt,
+    );
+    group.current.visible = scale.current > 0.005;
+    group.current.scale.setScalar(Math.max(scale.current, 0.001));
+    material.current.color.lerp(targetColor, 1 - Math.exp(-5 * dt));
+    material.current.opacity = Math.min(scale.current * 1.8, 1);
+    material.current.depthWrite = material.current.opacity > 0.99;
+    if (inlayMaterial.current) {
+      inlayMaterial.current.color.lerp(accent, 1 - Math.exp(-5 * dt));
+      inlayMaterial.current.emissive.copy(inlayMaterial.current.color);
+      inlayMaterial.current.opacity = scale.current * 0.85;
     }
-  }
-`;
+  });
 
-function GeometrySelector({ type }: { type: ArtifactType }) {
-  switch (type) {
-    case "pillar":
-      return <boxGeometry args={[1.5, 3.2, 1.5]} />;
-    case "torus":
-      return <torusKnotGeometry args={[1.35, 0.4, 180, 32, 2, 3]} />;
-    case "crystal":
-      return <icosahedronGeometry args={[1.85, 0]} />;
-    case "cube":
-    default:
-      return <boxGeometry args={[2.3, 2.3, 2.3]} />;
-  }
+  return (
+    <group
+      ref={group}
+      rotation={REST_ROTATION[type]}
+      visible={activeArtifact === type}
+    >
+      <mesh geometry={geometry}>
+        <meshPhysicalMaterial
+          ref={material}
+          color={targetColor}
+          metalness={type === "crystal" ? 0.58 : 0.88}
+          roughness={type === "crystal" ? 0.16 : 0.21}
+          clearcoat={1}
+          clearcoatRoughness={0.13}
+          envMapIntensity={1.25}
+          transparent
+          opacity={activeArtifact === type ? 1 : 0}
+        />
+      </mesh>
+      {type === "cube" && (
+        <mesh geometry={inlay}>
+          <meshStandardMaterial
+            ref={inlayMaterial}
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={0.45}
+            roughness={0.3}
+            metalness={0.4}
+            transparent
+          />
+        </mesh>
+      )}
+      {type === "pillar" && (
+        <>
+          <mesh position={[0, 1.66, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.627, 0.011, 8, 96]} />
+            <meshStandardMaterial
+              color={palette.start}
+              emissive={palette.start}
+              emissiveIntensity={0.25}
+              metalness={0.8}
+              roughness={0.25}
+            />
+          </mesh>
+          <mesh position={[0, -1.66, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.627, 0.011, 8, 96]} />
+            <meshStandardMaterial
+              color={palette.start}
+              emissive={palette.start}
+              emissiveIntensity={0.25}
+              metalness={0.8}
+              roughness={0.25}
+            />
+          </mesh>
+        </>
+      )}
+    </group>
+  );
 }
 
 export default function ArtifactNode() {
-  const groupRef = useRef<THREE.Group>(null);
-  const coreMatRef = useRef<THREE.MeshPhysicalMaterial>(null);
-  const shaderMatRef = useRef<THREE.ShaderMaterial>(null);
-  const { mouse } = useThree();
-
-  const isTargetAcquired = useStore((state) => state.isTargetAcquired);
-  const isCameraOn = useStore((state) => state.isCameraOn);
-  const activeArtifact = useStore((state) => state.activeArtifact);
-  const colorTheme = useStore((state) => state.colorTheme);
-
-  const palette = THEME_PALETTES[colorTheme];
-
-  const uniforms = useMemo(
+  const group = useRef<THREE.Group>(null);
+  const spin = useRef<THREE.Group>(null);
+  const phase = useRef(0);
+  const resetKey = useStore((state) => state.resetKey);
+  const geometries = useMemo(
     () => ({
-      time: { value: 0 },
-      intensity: { value: 0 },
-      colorStart: { value: new THREE.Color(palette.start) },
-      colorEnd: { value: new THREE.Color(palette.end) },
-      colorAccent: { value: new THREE.Color(palette.accent) },
+      cube: new RoundedBoxGeometry(2.2, 2.2, 2.2, 5, 0.17),
+      crystal: createCrystal(),
+      torus: new THREE.TorusKnotGeometry(1.02, 0.34, 240, 40, 2, 3),
+      pillar: createPillar(),
+      inlay: createCubeInlay(),
     }),
-    []
+    [],
+  );
+
+  useEffect(
+    () => () => {
+      Object.values(geometries).forEach((geometry) => geometry.dispose());
+    },
+    [geometries],
   );
 
   useEffect(() => {
-    if (shaderMatRef.current) {
-      shaderMatRef.current.uniforms.colorStart.value.set(palette.start);
-      shaderMatRef.current.uniforms.colorEnd.value.set(palette.end);
-      shaderMatRef.current.uniforms.colorAccent.value.set(palette.accent);
+    phase.current = 0;
+    if (group.current) {
+      group.current.rotation.set(0, 0, 0);
+      group.current.position.set(0, 0, 0);
     }
-    if (coreMatRef.current) {
-      coreMatRef.current.emissive.set(palette.emissive);
-    }
-  }, [palette]);
+  }, [resetKey]);
 
-  useFrame((state) => {
-    if (!groupRef.current || !shaderMatRef.current) return;
-    const t = state.clock.getElapsedTime();
-    shaderMatRef.current.uniforms.time.value = t;
-
-    const isTracking = isCameraOn && isTargetAcquired;
-
-    // Smooth intensity interpolation
-    const targetIntensity = isTracking ? 1.0 : 0.0;
-    const currentIntensity = shaderMatRef.current.uniforms.intensity.value;
-    shaderMatRef.current.uniforms.intensity.value = THREE.MathUtils.lerp(
-      currentIntensity,
-      targetIntensity,
-      0.1
+  useFrame((_, delta) => {
+    if (!group.current || !spin.current) return;
+    const store = useStore.getState();
+    const dt = Math.min(delta, 0.05);
+    const animated = store.isPlaying;
+    if (animated) phase.current += (dt * store.motionSpeed) / 0.6;
+    const tracking = store.isCameraOn && store.isTargetAcquired;
+    const x = tracking
+      ? (0.5 - store.targetPosition[0]) * 2
+      : (store.mousePosition[0] - 0.5) * 2;
+    const y = tracking
+      ? (0.5 - store.targetPosition[1]) * 2
+      : (0.5 - store.mousePosition[1]) * 2;
+    const movement = store.reducedMotion ? 0 : 1;
+    group.current.rotation.x = THREE.MathUtils.damp(
+      group.current.rotation.x,
+      -y * 0.1 * movement,
+      3.2,
+      dt,
     );
-
-    // Update core emissive intensity
-    if (coreMatRef.current) {
-      coreMatRef.current.emissiveIntensity = THREE.MathUtils.lerp(
-        coreMatRef.current.emissiveIntensity,
-        isTracking ? 0.9 : 0.08,
-        0.1
-      );
-    }
-
-    if (isTracking) {
-      const targetPos = useStore.getState().targetPosition;
-      
-      // 1. ROTATIONAL GAZE TRACKING (Follows face angle)
-      const rotX = (targetPos[1] - 0.5) * 2.4;
-      const rotY = -(targetPos[0] - 0.5) * 2.6;
-
-      groupRef.current.rotation.x = THREE.MathUtils.lerp(
-        groupRef.current.rotation.x,
-        rotX,
-        0.12
-      );
-      groupRef.current.rotation.y = THREE.MathUtils.lerp(
-        groupRef.current.rotation.y,
-        rotY,
-        0.12
-      );
-
-      // 2. SPATIAL TRANSLATION (Sculpture leans toward the user's face position)
-      const posX = -(targetPos[0] - 0.5) * 1.2;
-      const posY = -(targetPos[1] - 0.5) * 0.9;
-
-      groupRef.current.position.x = THREE.MathUtils.lerp(
-        groupRef.current.position.x,
-        posX,
-        0.1
-      );
-      groupRef.current.position.y = THREE.MathUtils.lerp(
-        groupRef.current.position.y,
-        posY,
-        0.1
-      );
-
-      // 3. ORGANIC HEARTBEAT PULSE (Breathing effect when locked)
-      const pulse = 1.0 + Math.sin(t * 5.0) * 0.04;
-      groupRef.current.scale.set(pulse, pulse, pulse);
-    } else {
-      // Natural mouse parallax fallback
-      const mouseRotX = -mouse.y * 0.5;
-      const mouseRotY = mouse.x * 0.65;
-
-      groupRef.current.rotation.x = THREE.MathUtils.lerp(
-        groupRef.current.rotation.x,
-        mouseRotX,
-        0.05
-      );
-      groupRef.current.rotation.y = THREE.MathUtils.lerp(
-        groupRef.current.rotation.y,
-        mouseRotY,
-        0.05
-      );
-
-      groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, 0, 0.06);
-      groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, 0, 0.06);
-      groupRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.06);
-    }
-
-    // Continuous celestial drift
-    groupRef.current.rotation.z += isTracking ? 0.003 : 0.0012;
+    group.current.rotation.y = THREE.MathUtils.damp(
+      group.current.rotation.y,
+      x * 0.16 * movement,
+      3.2,
+      dt,
+    );
+    group.current.position.y = Math.sin(phase.current * 0.7) * 0.07;
+    spin.current.rotation.y = phase.current * 0.105;
+    spin.current.rotation.z = Math.sin(phase.current * 0.3) * 0.025;
   });
 
   return (
-    <>
-      <AmbientDust isAwake={isCameraOn && isTargetAcquired} />
-
-      <group ref={groupRef}>
-        {/* Layer 1: Core Physical Volcanic Obsidian with Active Glow */}
-        <mesh>
-          <GeometrySelector type={activeArtifact} />
-          <meshPhysicalMaterial
-            ref={coreMatRef}
-            color="#040406"
-            metalness={0.94}
-            roughness={0.08}
-            emissive={palette.emissive}
-            emissiveIntensity={0.08}
-            clearcoat={1.0}
-            clearcoatRoughness={0.03}
+    <group ref={group}>
+      <group ref={spin}>
+        {ARTIFACTS.map((type) => (
+          <Specimen
+            key={type}
+            type={type}
+            geometry={geometries[type]}
+            inlay={geometries.inlay}
           />
-        </mesh>
-
-        {/* Layer 2: Internal Light Veins (Ignites with HDR emission on detection) */}
-        <mesh scale={1.004}>
-          <GeometrySelector type={activeArtifact} />
-          <shaderMaterial
-            ref={shaderMatRef}
-            transparent
-            depthWrite={false}
-            toneMapped={false}
-            uniforms={uniforms}
-            vertexShader={veinVertexShader}
-            fragmentShader={veinFragmentShader}
-          />
-        </mesh>
-
-        {/* Layer 3: Physical Refractive Glass Envelope */}
-        <mesh scale={1.012}>
-          <GeometrySelector type={activeArtifact} />
-          <meshPhysicalMaterial
-            transmission={0.95}
-            thickness={0.3}
-            roughness={0.02}
-            ior={1.6}
-            reflectivity={0.4}
-            clearcoat={1.0}
-            clearcoatRoughness={0.02}
-            transparent
-            opacity={0.92}
-            metalness={0.04}
-            attenuationColor={palette.start}
-            attenuationDistance={2.2}
-          />
-        </mesh>
+        ))}
       </group>
-    </>
+    </group>
   );
 }

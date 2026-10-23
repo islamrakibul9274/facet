@@ -1,60 +1,161 @@
 "use client";
-
-import { View } from "@/components/3d/View";
+import dynamic from "next/dynamic";
+import { useEffect } from "react";
+import { MousePointer2, MoveUpRight, Rotate3D } from "lucide-react";
 import { Scanner } from "@/components/ui/Scanner";
-import { CommandDock } from "@/components/ui/CommandDock";
+import { CommandDock, ARTIFACTS } from "@/components/ui/CommandDock";
 import { Header } from "@/components/ui/Header";
 import { Inspector } from "@/components/ui/Inspector";
-import { useStore } from "@/store/useStore";
-
+import { useStore, THEME_PALETTES } from "@/store/useStore";
+const View = dynamic(
+  () => import("@/components/3d/View").then((mod) => mod.View),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="scene-loading" role="status">
+        <span className="loading-orbit" />
+        Preparing your sculpture
+        <span className="loading-caption">
+          A little light. A little patience.
+        </span>
+      </div>
+    ),
+  },
+);
 export default function Home() {
-  const isCameraOn = useStore((state) => state.isCameraOn);
-  const latency = useStore((state) => state.inferenceLatency);
-
+  const active = useStore((s) => s.activeArtifact);
+  const theme = useStore((s) => s.colorTheme);
+  const camera = useStore((s) => s.isCameraOn);
+  const acquired = useStore((s) => s.isTargetAcquired);
+  const artifact = ARTIFACTS.find((item) => item.id === active)!;
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updateMotion = () =>
+      useStore.getState().setReducedMotion(media.matches);
+    updateMotion();
+    media.addEventListener("change", updateMotion);
+    const keydown = (e: KeyboardEvent) => {
+      if (
+        e.ctrlKey ||
+        e.metaKey ||
+        e.altKey ||
+        useStore.getState().showInspector ||
+        (e.target instanceof HTMLElement &&
+          (e.target.isContentEditable ||
+            /INPUT|TEXTAREA|SELECT|BUTTON|A/.test(e.target.tagName)))
+      )
+        return;
+      const item = ARTIFACTS[Number(e.key) - 1];
+      if (item) useStore.getState().setActiveArtifact(item.id);
+      if (e.code === "Space") {
+        e.preventDefault();
+        useStore.getState().togglePlayback();
+      }
+      if (e.key.toLowerCase() === "r") useStore.getState().resetView();
+    };
+    window.addEventListener("keydown", keydown);
+    return () => {
+      media.removeEventListener("change", updateMotion);
+      window.removeEventListener("keydown", keydown);
+    };
+  }, []);
   return (
     <main
-      suppressHydrationWarning
-      className="relative w-full max-w-full h-[100dvh] bg-[#030305] overflow-x-hidden overflow-y-hidden select-none flex justify-center"
+      className="studio"
+      style={
+        { "--mineral": THEME_PALETTES[theme].start } as React.CSSProperties
+      }
     >
-      {/* 1. Fullscreen WebGL Three.js Canvas Backdrop */}
-      <View />
-
-      {/* 2. Responsive Application Stage (Fluid width up to max-w-7xl with standard responsive padding) */}
-      <div className="relative z-20 w-full max-w-7xl h-full mx-auto px-4 sm:px-6 md:px-8 lg:px-12 pt-6 sm:pt-8 md:pt-10 lg:pt-12 pb-6 sm:pb-8 md:pb-10 lg:pb-12 flex flex-col justify-between pointer-events-none">
-        
-        {/* TOP: Header with Generous Breathing Room */}
-        <div className="w-full pointer-events-auto">
-          <Header />
-        </div>
-
-        {/* CENTER STAGE: 3D Focal Space */}
-        <div className="flex-1 relative flex items-center justify-center pointer-events-none" />
-
-        {/* BOTTOM: Responsive Control Bar */}
-        <div className="w-full relative pointer-events-auto flex flex-col sm:flex-row items-center sm:items-end justify-between gap-4">
-          {/* Left Slot: Camera Scanner Capsule (Fluid docking) */}
-          <div className="sm:absolute sm:left-0 sm:bottom-0 z-30 pointer-events-auto w-full sm:w-auto flex justify-center sm:justify-start">
-            <Scanner />
+      <Header />
+      <div className="workspace">
+        <section className="intro" aria-labelledby="studio-title">
+          <div className="eyebrow">
+            <span className="status-dot" /> AN EXPERIMENT IN LIGHT
           </div>
-
-          {/* Center Slot: Symmetrical Command Dock Centered with Auto Margin (mx-auto) */}
-          <div className="w-full flex justify-center mx-auto z-20 pointer-events-auto">
-            <CommandDock />
+          <h1 id="studio-title">
+            Matter.
+            <br />
+            <em>In motion.</em>
+          </h1>
+          <p>
+            A playground for form, light,
+            <br className="desktop-break" /> and your own curiosity.
+          </p>
+          <span className="intro-rule" />
+          <div className="interaction-caption">
+            <MousePointer2 size={14} />
+            <span>
+              {camera
+                ? acquired
+                  ? "Responding to your presence"
+                  : "Finding your presence"
+                : "Move your cursor. Make a connection."}
+            </span>
           </div>
-
-          {/* Right Slot: Technical Telemetry & Spatial Specs (Desktop / Tablet) */}
-          <div className="sm:absolute sm:right-0 sm:bottom-0 z-30 hidden md:flex items-center pointer-events-auto">
-            <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono tracking-wider px-3 py-1.5 rounded-full bg-zinc-950/70 backdrop-blur-md border border-white/5 shadow-sm">
-              <span>{isCameraOn ? `${latency || 12}MS` : "CURSOR"}</span>
-              <span className="text-white/15">&bull;</span>
-              <span>RESPONSIVE</span>
+          <div className="collection-note">
+            <span>THE COLLECTION</span>
+            <strong>
+              Four forms.
+              <br />
+              Endless perspectives.
+            </strong>
+            <MoveUpRight size={18} strokeWidth={1} />
+          </div>
+        </section>
+        <section
+          className="sculpture-stage"
+          aria-label={`${artifact.name} sculpture in ${THEME_PALETTES[theme].name}. Drag to rotate.`}
+        >
+          <div className="stage-grid" aria-hidden="true" />
+          <div className="stage-halo" aria-hidden="true" />
+          <View />
+          <div className="stage-coordinate coordinate-top" aria-hidden="true">
+            Y +
+          </div>
+          <div className="stage-coordinate coordinate-left" aria-hidden="true">
+            − X
+          </div>
+          <div className="stage-coordinate coordinate-right" aria-hidden="true">
+            X +
+          </div>
+          <div
+            className="specimen-caption"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <span className="specimen-number">
+              {artifact.index} <span>/ 04</span>
+            </span>
+            <div>
+              <h2>{artifact.name}</h2>
+              <p>
+                {artifact.note} <span>·</span> {THEME_PALETTES[theme].name}
+              </p>
             </div>
           </div>
-        </div>
-
-        {/* Floating Inspector Panel (Responsive anchor) */}
-        <Inspector />
+          <div className="drag-hint">
+            <Rotate3D size={14} />
+            <span>Drag to explore</span>
+          </div>
+        </section>
+        <CommandDock />
       </div>
+      <div className="scanner-anchor">
+        <Scanner />
+      </div>
+      <footer className="site-footer">
+        <span>DESIGNED TO BE EXPLORED.</span>
+        <span className="footer-center">
+          <span className="status-dot" />{" "}
+          {camera && acquired
+            ? "CONNECTED TO YOUR PRESENCE"
+            : "REAL-TIME. A LITTLE OTHERWORLDLY."}
+        </span>
+        <span>
+          TAKE A MOMENT. <span className="footer-spark">✳</span>
+        </span>
+      </footer>
+      <Inspector />
     </main>
   );
 }

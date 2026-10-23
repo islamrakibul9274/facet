@@ -1,94 +1,59 @@
-# Facet — Interactive 3D Glass Sculpture
+# Facet — Matter in Motion
 
-> A real-time interactive optical study merging on-device computer vision with physical volcanic glass simulation and WebGL shaders.
+An interactive digital sculpture studio exploring form, light, and movement.
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-Facet_Online-38bdf8?style=for-the-badge&logo=vercel)](https://facet-glass.vercel.app/)
-[![Next.js 16](https://img.shields.io/badge/Next.js_16-Turbopack-white?style=for-the-badge&logo=nextdotjs)](https://nextjs.org/)
-[![Three.js](https://img.shields.io/badge/Three.js-R3F-black?style=for-the-badge&logo=three.js)](https://threejs.org/)
-[![YOLO26n](https://img.shields.io/badge/Vision_Engine-YOLO26n_WASM-emerald?style=for-the-badge)](https://github.com/ultralytics/ultralytics)
+**[Open the live studio](https://antigravity-obsidian.vercel.app)**
 
----
+## The experience
 
-## 🌐 Live Application
+- **Four sculptural forms:** Monolith (a beveled cube with a mineral inlay), Prism (a cut crystal), Continuum (an endless knot), and Helix (a twisted, fluted column).
+- **Four mineral finishes:** Obsidian, Jade, Amethyst, and Amber, lit with a self-contained reflection studio.
+- **Controlled motion:** drag to rotate, pause the sculpture, adjust its speed, or reset the view. Idle motion uses elapsed time for consistent behavior across refresh rates.
+- **Optional presence:** enable the camera to have the sculpture follow your movement. The YOLO models detect people, not faces or identity. Frames are processed in a local Web Worker and are never uploaded.
+- **Accessible controls:** keyboard shortcuts, labeled buttons, visible focus, a native modal, and reduced motion support. Reduced motion starts with animation paused; you can explicitly play it.
+- **Responsive layout:** a desktop studio and a scrollable mobile layout, with adaptive sculpture framing and a capped rendering resolution.
 
-Experience the live interactive 3D sculpture in your browser:
+The scene uses local studio lights and requires no remote HDRI assets. The camera model and matching ONNX runtime load only when presence is enabled. Camera or tracking failures stop the stream and show a recoverable error. Hiding the preview keeps tracking connected; turning off the camera stops it.
 
-* **Primary Production URL:** [https://facet-glass.vercel.app/](https://facet-glass.vercel.app/)
-* **Alternative Mirror:** [https://facet-interactive.vercel.app/](https://facet-interactive.vercel.app/)
-* **Legacy Alias:** [https://antigravity-obsidian.vercel.app/](https://antigravity-obsidian.vercel.app/)
+## Development
 
-> **Tip**: Grant camera access to enable real-time spatial YOLO26 tracking. When camera access is disabled or unavailable, the system automatically falls back to smooth cursor/mouse parallax orientation.
+Requires Node.js 24 or later and npm.
 
----
-
-## Overview
-
-**Facet** explores the intersection of physical light transmission, generative shaders, and spatial awareness. The 3D glass sculpture responds continuously to your presence through real-time on-device face tracking—interpolating motion smoothly at 60 FPS without dropping frames or sending any video data over the network.
-
----
-
-## Key Features
-
-### 1. Real-Time Vision Engine (YOLO26n WASM)
-- **Zero-Copy Transferable Pipeline**: Image buffers are passed directly to the background Web Worker via `ArrayBuffer` transfer, removing main-thread serialization overhead.
-- **Throttled Inference & Fluid 60 FPS Motion**: Inference runs at ~16 FPS to keep the CPU/GPU cool and the webcam feed silky smooth, while the Three.js physics loop smoothly interpolates coordinates at 60 FPS using Exponential Moving Average (EMA) damping.
-- **Flexible Hardware Constraints**: Robust fallback camera constraints prevent macOS camera hardware timeouts (`Timeout starting video source`).
-- **Cursor Parallax Fallback**: Smooth mouse interaction whenever the camera is offline or denied.
-
-### 2. Physical Volcanic Glass Materials & Geometries
-- **Multi-Layer Optical Structure**:
-  1. *Obsidian Core*: Deep volcanic physical mesh (`metalness: 0.94`, `roughness: 0.08`).
-  2. *Internal Light Veins*: Multi-frequency procedural GLSL wave flow.
-  3. *Glass Envelope*: Refractive transmission glass (`ior: 1.6`, `thickness: 0.3`, `transmission: 0.95`).
-- **Four Geometries**:
-  - **Cube**: Beveled obsidian block
-  - **Crystal**: Architectural icosahedron with faceted dispersion
-  - **Torus**: Continuous hyper-reflective knot
-  - **Pillar**: Monumental beveled prism
-- **Four Color Palettes**:
-  - **Obsidian**: Cool cyan highlight on volcanic black glass
-  - **Amethyst**: Soft smoke plum
-  - **Emerald**: Forest jade
-  - **Amber**: Warm cognac champagne
-
-### 3. Clean Modern UI
-- Responsive layout designed for mobile, tablet, and widescreen displays.
-- Floating command dock with unified heights, zero overflow, and comfortable padding.
-- Contained color swatches with inset active rings that stay strictly within bounds.
-- Subtle, optional camera preview with hairline face tracking frame.
-- Unobtrusive sound feedback via Web Audio API.
-
----
-
-## Tech Stack
-
-- **Framework**: [Next.js 16](https://nextjs.org/) (App Router, Turbopack)
-- **3D & Shaders**: Three.js, [React Three Fiber](https://r3f.docs.pmnd.rs/), React Three Drei, Postprocessing
-- **Computer Vision**: [ONNX Runtime Web](https://onnxruntime.ai/), YOLO26n End-to-End
-- **State Management**: [Zustand](https://github.com/pmndrs/zustand)
-- **Styling**: Tailwind CSS v4, Lucide Icons
-
----
-
-## Local Setup
-
-```bash
-# Clone
-git clone https://github.com/islamrakibul9274/facet.git
-cd facet
-
-# Install dependencies
-npm install
-
-# Run development server
+```sh
+npm ci
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [localhost:3000](http://localhost:3000). No environment variables are needed.
 
----
+The `predev` and `prebuild` scripts copy the installed ONNX runtime's matching WASM files into `public/vision/`. These generated files are ignored by Git and served from the app's own origin.
 
-## Author
+## Checks
 
-**Rakibul Islam Rumel**
-- GitHub: [@islamrakibul9274](https://github.com/islamrakibul9274)
+```sh
+npm run lint
+npm test
+npm run build
+```
+
+Regression tests cover person-only detection in both models, letterbox coordinate mapping, malformed detections, camera shutdown, stale worker results, and playback state. The bundled primary model has also been loaded and run with the WASM backend to confirm its output contract.
+
+## Controls
+
+| Control         | Action                          |
+| --------------- | ------------------------------- |
+| Drag            | Rotate the view                 |
+| `1`–`4`         | Select a form                   |
+| `Space`         | Play / pause                    |
+| `R`             | Reset the view                  |
+| Enable presence | Opt in to local camera tracking |
+
+Camera access requires HTTPS or localhost. Permission is requested only after selecting **Enable presence**. Camera frames remain on the device. The model recognizes a person in the frame and uses their bounding-box center to guide the sculpture.
+
+## Stack and deployment
+
+Next.js 16, React 19, React Three Fiber, Drei, Three.js, Zustand, Tailwind CSS 4, and ONNX Runtime Web.
+
+The GitHub repository is connected to the existing Vercel project **antigravity-obsidian**, with `main` as its production branch. Pushing `main` triggers production deployment. Vercel runs `npm run build`, including runtime asset preparation.
+
+Created by [Rakibul Islam Rumel](https://github.com/islamrakibul9274).

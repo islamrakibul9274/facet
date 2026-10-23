@@ -4,17 +4,20 @@ class SoundEngine {
   private ctx: AudioContext | null = null;
   private ambientOsc: OscillatorNode | null = null;
   private ambientGain: GainNode | null = null;
-  private isMuted: boolean = false;
+  private isMuted: boolean = true;
 
   private init() {
     if (!this.ctx && typeof window !== "undefined") {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
       }
     }
     if (this.ctx && this.ctx.state === "suspended") {
-      this.ctx.resume();
+      void this.ctx.resume().catch(() => {});
     }
   }
 
@@ -70,7 +73,10 @@ class SoundEngine {
 
         osc.type = "sine";
         osc.frequency.setValueAtTime(freq, now + delay);
-        osc.frequency.exponentialRampToValueAtTime(freq * 1.01, now + delay + 0.4);
+        osc.frequency.exponentialRampToValueAtTime(
+          freq * 1.01,
+          now + delay + 0.4,
+        );
 
         gain.gain.setValueAtTime(0.0001, now + delay);
         gain.gain.linearRampToValueAtTime(0.06 / (idx + 1), now + delay + 0.04);

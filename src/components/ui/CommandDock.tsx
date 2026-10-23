@@ -1,135 +1,234 @@
 "use client";
-
-import { useStore, ArtifactType, ColorThemeType } from "@/store/useStore";
+import {
+  Camera,
+  CameraOff,
+  Check,
+  Eye,
+  Pause,
+  Play,
+  RotateCcw,
+  ArrowUpRight,
+} from "lucide-react";
+import {
+  useStore,
+  ArtifactType,
+  ColorThemeType,
+  THEME_PALETTES,
+} from "@/store/useStore";
 import { sound } from "@/utils/sound";
-import { Camera, Box, Hexagon, Orbit, Columns } from "lucide-react";
 
-const ARTIFACTS: {
+export const ARTIFACTS: {
   id: ArtifactType;
-  label: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  name: string;
+  note: string;
+  index: string;
 }[] = [
-  { id: "cube", label: "Cube", icon: Box },
-  { id: "crystal", label: "Crystal", icon: Hexagon },
-  { id: "torus", label: "Torus", icon: Orbit },
-  { id: "pillar", label: "Pillar", icon: Columns },
+  { id: "cube", name: "Monolith", note: "Beveled cube", index: "01" },
+  { id: "crystal", name: "Prism", note: "Cut crystal", index: "02" },
+  { id: "torus", name: "Continuum", note: "Endless knot", index: "03" },
+  { id: "pillar", name: "Helix", note: "Twisted column", index: "04" },
 ];
-
-const THEMES: { id: ColorThemeType; name: string; hex: string }[] = [
-  { id: "obsidian", name: "Obsidian", hex: "#38bdf8" },
-  { id: "amethyst", name: "Amethyst", hex: "#c084fc" },
-  { id: "emerald", name: "Emerald", hex: "#34d399" },
-  { id: "amber", name: "Amber", hex: "#fbbf24" },
-];
-
-export const CommandDock = () => {
-  const isCameraOn = useStore((state) => state.isCameraOn);
-  const toggleCamera = useStore((state) => state.toggleCamera);
-  const activeArtifact = useStore((state) => state.activeArtifact);
-  const setActiveArtifact = useStore((state) => state.setActiveArtifact);
-  const colorTheme = useStore((state) => state.colorTheme);
-  const setColorTheme = useStore((state) => state.setColorTheme);
-  const targetAcquired = useStore((state) => state.isTargetAcquired);
-
+function ShapeIcon({ type }: { type: ArtifactType }) {
   return (
-    <nav
-      aria-label="Sculpture Controls"
-      className="w-fit max-w-[calc(100vw-2rem)] mx-auto px-2.5 sm:px-3.5 py-1.5 sm:py-2 flex items-center gap-2 sm:gap-3 rounded-full bg-zinc-950/90 backdrop-blur-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.1)] select-none pointer-events-auto overflow-x-auto sm:overflow-visible"
+    <svg
+      viewBox="0 0 56 50"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1"
+      aria-hidden="true"
     >
-      {/* 1. Geometry Segmented Control */}
-      <div className="p-1 rounded-full bg-white/[0.04] border border-white/5 flex items-center gap-1">
-        {ARTIFACTS.map(({ id, label, icon: Icon }) => {
-          const isSelected = activeArtifact === id;
-          return (
-            <button
-              key={id}
-              onClick={() => {
-                sound.playSwitchTone(true);
-                setActiveArtifact(id);
-              }}
-              className={`px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 sm:gap-2 leading-none transition-all shrink-0 ${
-                isSelected
-                  ? "bg-white/15 text-white shadow-sm font-semibold"
-                  : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
-              }`}
-              title={label}
-            >
-              <Icon size={14} className="shrink-0" />
-              <span className="text-[12px] hidden sm:inline">{label}</span>
-            </button>
-          );
-        })}
+      {type === "cube" && (
+        <>
+          <path d="m28 6 18 10v21L28 47 10 37V16L28 6Z" />
+          <path d="m10 16 18 11 18-11M28 27v20M15 14l18 10v20" opacity=".4" />
+        </>
+      )}
+      {type === "crystal" && (
+        <>
+          <path d="m28 3 18 17-7 21-11 7-11-7-7-21L28 3Z" />
+          <path
+            d="m28 3-8 18 8 27 8-27-8-18ZM10 20h36M17 41l19-20M39 41 20 21"
+            opacity=".65"
+          />
+        </>
+      )}
+      {type === "torus" && (
+        <>
+          <path
+            d="M29 9C8-4-1 36 17 39c17 3 10-38-1-27C0 29 33 52 43 34 54 14 13 9 15 27c2 17 42 4 26-9-13-11-38 20-21 24C40 46 43 17 29 9Z"
+            strokeWidth="2"
+          />
+          <path d="M27 11C12 0 6 32 18 36" opacity=".4" />
+        </>
+      )}
+      {type === "pillar" && (
+        <>
+          <path d="m21 3 17 6-6 11 4 14-9 14-16-7 7-14-3-13 6-11Z" />
+          <path
+            d="m21 3 5 12-2 12 3 21M38 9l-12 6-11-1M32 20l-8 7-6 0M36 34l-12-7M11 41l16-6 9-1"
+            opacity=".6"
+          />
+        </>
+      )}
+    </svg>
+  );
+}
+const themes: ColorThemeType[] = ["obsidian", "emerald", "amethyst", "amber"];
+export function CommandDock() {
+  const active = useStore((s) => s.activeArtifact);
+  const theme = useStore((s) => s.colorTheme);
+  const playing = useStore((s) => s.isPlaying);
+  const reducedMotion = useStore((s) => s.reducedMotion);
+  const speed = useStore((s) => s.motionSpeed);
+  const camera = useStore((s) => s.isCameraOn);
+  const acquired = useStore((s) => s.isTargetAcquired);
+  const scanner = useStore((s) => s.showScanner);
+  return (
+    <aside className="studio-panel" aria-label="Sculpture controls">
+      <div className="panel-title">
+        <span>MAKE IT YOURS</span>
+        <span className="tiny-cross">+</span>
       </div>
-
-      {/* Divider */}
-      <div className="h-4 w-px bg-white/10 shrink-0 self-center" />
-
-      {/* 2. Face Tracking Toggle */}
-      <button
-        onClick={() => {
-          sound.playClick(isCameraOn ? 400 : 800);
-          toggleCamera();
-        }}
-        className={`px-3.5 sm:px-4 py-2 rounded-full text-xs font-medium flex items-center gap-2 leading-none transition-all shrink-0 ${
-          isCameraOn
-            ? targetAcquired
-              ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-[0_0_12px_rgba(52,211,153,0.15)]"
-              : "bg-amber-500/15 text-amber-300 border border-amber-500/30"
-            : "bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5"
-        }`}
-      >
-        {isCameraOn ? (
-          <>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
-            <span className="text-[12px]">
-              <span className="hidden sm:inline">
-                {targetAcquired ? "Tracking Active" : "Searching..."}
-              </span>
-              <span className="sm:hidden">
-                {targetAcquired ? "Active" : "Scan"}
-              </span>
-            </span>
-          </>
-        ) : (
-          <>
-            <Camera size={14} className="text-zinc-400 shrink-0" />
-            <span className="text-[12px]">
-              <span className="hidden sm:inline">Face Tracking</span>
-              <span className="sm:hidden">Track</span>
-            </span>
-          </>
-        )}
-      </button>
-
-      {/* Divider */}
-      <div className="h-4 w-px bg-white/10 shrink-0 self-center" />
-
-      {/* 3. Color Theme Selector */}
-      <div className="px-2 sm:px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/5 flex items-center gap-1.5 sm:gap-2 shrink-0">
-        {THEMES.map(({ id, name, hex }) => {
-          const isSelected = colorTheme === id;
-          return (
+      <section className="control-section">
+        <div className="section-label">
+          <h2>01 — Form</h2>
+          <span>4 objects</span>
+        </div>
+        <div className="shape-grid" role="group" aria-label="Choose sculpture">
+          {ARTIFACTS.map((item) => (
+            <button
+              key={item.id}
+              className={`shape-card ${active === item.id ? "selected" : ""}`}
+              aria-label={`${item.name}, ${item.note}`}
+              aria-pressed={active === item.id}
+              onClick={() => {
+                useStore.getState().setActiveArtifact(item.id);
+                sound.playSwitchTone();
+              }}
+            >
+              <span className="shape-card-index">{item.index}</span>
+              {active === item.id && <span className="selected-dot" />}
+              <ShapeIcon type={item.id} />
+              <span>{item.name}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+      <section className="control-section">
+        <div className="section-label">
+          <h2>02 — Material</h2>
+          <span>{THEME_PALETTES[theme].name}</span>
+        </div>
+        <div
+          className="material-options"
+          role="group"
+          aria-label="Choose material"
+        >
+          {themes.map((id) => (
             <button
               key={id}
+              className={`material-option ${theme === id ? "selected" : ""}`}
+              title={THEME_PALETTES[id].name}
+              aria-label={THEME_PALETTES[id].name}
+              aria-pressed={theme === id}
               onClick={() => {
+                useStore.getState().setColorTheme(id);
                 sound.playSwitchTone(false);
-                setColorTheme(id);
               }}
-              className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center transition-all shrink-0 ${
-                isSelected
-                  ? "border border-white/60 bg-white/10"
-                  : "border border-transparent opacity-40 hover:opacity-100 hover:bg-white/5"
-              }`}
-              title={name}
             >
               <span
-                className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-transform"
-                style={{ backgroundColor: hex }}
-              />
+                className="material-swatch"
+                style={{
+                  background: `radial-gradient(circle at 30% 22%, ${THEME_PALETTES[id].accent}, ${THEME_PALETTES[id].start} 22%, ${THEME_PALETTES[id].end} 75%)`,
+                }}
+              >
+                {theme === id && <Check size={13} />}
+              </span>
+              <span>{THEME_PALETTES[id].name}</span>
             </button>
-          );
-        })}
+          ))}
+        </div>
+      </section>
+      <section className="control-section motion-section">
+        <div className="section-label">
+          <h2>03 — Motion</h2>
+          <span>
+            {reducedMotion ? "Reduced" : playing ? "Flowing" : "Paused"}
+          </span>
+        </div>
+        <div className="motion-controls">
+          <button
+            className="motion-toggle"
+            aria-label={playing ? "Pause animation" : "Play animation"}
+            aria-pressed={playing}
+            onClick={() => {
+              useStore.getState().togglePlayback();
+              sound.playClick(500);
+            }}
+          >
+            {playing ? <Pause size={14} /> : <Play size={14} />}
+            <span>{playing ? "Pause" : "Play"}</span>
+          </button>
+          <input
+            aria-label="Animation speed"
+            type="range"
+            min="0.1"
+            max="1"
+            step="0.05"
+            value={speed}
+            onChange={(e) =>
+              useStore.getState().setMotionSpeed(Number(e.target.value))
+            }
+          />
+          <button
+            className="icon-button reset-button"
+            title="Reset view (R)"
+            aria-label="Reset view"
+            onClick={() => useStore.getState().resetView()}
+          >
+            <RotateCcw size={15} />
+          </button>
+        </div>
+      </section>
+      <div className="presence-control">
+        <div className="presence-heading">
+          <span className="presence-mark">
+            <Eye size={17} />
+          </span>
+          <div>
+            <h2>A little more personal.</h2>
+            <p>Let the sculpture follow you.</p>
+          </div>
+        </div>
+        <button
+          className={`camera-button ${camera ? "camera-active" : ""}`}
+          aria-pressed={camera}
+          onClick={() => {
+            useStore.getState().toggleCamera();
+            sound.playClick();
+          }}
+        >
+          {camera ? <CameraOff size={15} /> : <Camera size={15} />}
+          <span>{camera ? "Turn camera off" : "Enable presence"}</span>
+          {!camera && <ArrowUpRight size={15} />}
+          {camera && <span className="status-dot" />}
+        </button>
+        <p className="privacy-note">
+          {camera
+            ? acquired
+              ? "Presence detected. Move gently to explore."
+              : "Camera on. Looking for your presence…"
+            : "Camera optional. Processing stays on your device."}
+        </p>
+        {camera && (
+          <button
+            className="preview-toggle"
+            onClick={() => useStore.getState().toggleScanner()}
+          >
+            {scanner ? "Hide camera preview" : "Show camera preview"}
+          </button>
+        )}
       </div>
-    </nav>
+    </aside>
   );
-};
+}

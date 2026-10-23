@@ -1,8 +1,7 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
-export type ArtifactType = 'cube' | 'crystal' | 'torus' | 'pillar';
-export type ColorThemeType = 'obsidian' | 'amethyst' | 'emerald' | 'amber';
-
+export type ArtifactType = "cube" | "crystal" | "torus" | "pillar";
+export type ColorThemeType = "obsidian" | "amethyst" | "emerald" | "amber";
 export interface ColorPalette {
   start: string;
   end: string;
@@ -10,63 +9,58 @@ export interface ColorPalette {
   emissive: string;
   name: string;
 }
-
 export const THEME_PALETTES: Record<ColorThemeType, ColorPalette> = {
   obsidian: {
-    start: '#38bdf8', // Cool Iced Cyan
-    end: '#1e3a8a',   // Deep Cobalt
-    accent: '#818cf8', // Indigo
-    emissive: '#030712',
-    name: 'Obsidian',
-  },
-  amethyst: {
-    start: '#c084fc', // Soft Violet
-    end: '#581c87',   // Smoked Plum
-    accent: '#e879f9', // Orchid
-    emissive: '#10051d',
-    name: 'Amethyst',
+    start: "#a6c9dd",
+    end: "#263746",
+    accent: "#dceaf2",
+    emissive: "#101c27",
+    name: "Obsidian",
   },
   emerald: {
-    start: '#34d399', // Mint Jade
-    end: '#064e3b',   // Forest Glass
-    accent: '#a7f3d0', // Seafoam
-    emissive: '#021e14',
-    name: 'Emerald',
+    start: "#a7e8c7",
+    end: "#184d41",
+    accent: "#d5ffe9",
+    emissive: "#10362d",
+    name: "Jade",
+  },
+  amethyst: {
+    start: "#c4abea",
+    end: "#49345c",
+    accent: "#eee0ff",
+    emissive: "#271a39",
+    name: "Amethyst",
   },
   amber: {
-    start: '#fbbf24', // Warm Champagne
-    end: '#78350f',   // Smoked Cognac
-    accent: '#f59e0b', // Radiant Amber
-    emissive: '#1a0b02',
-    name: 'Amber',
+    start: "#e6bd83",
+    end: "#6a4322",
+    accent: "#ffe5bd",
+    emissive: "#392514",
+    name: "Amber",
   },
 };
-
 interface AppState {
-  // Vision & Tracking
   isCameraOn: boolean;
   isTargetAcquired: boolean;
-  targetPosition: [number, number]; // [x, y] normalized 0..1
-  boundingBox: [number, number, number, number] | null; // [x1, y1, x2, y2]
+  targetPosition: [number, number];
+  boundingBox: [number, number, number, number] | null;
   confidence: number;
-  inferenceLatency: number; // in ms
+  inferenceLatency: number;
   cameraError: string | null;
-
-  // 3D Sculpture & Aesthetics
   activeArtifact: ArtifactType;
   colorTheme: ColorThemeType;
   soundEnabled: boolean;
   mousePosition: [number, number];
-
-  // UI State
   showScanner: boolean;
   showInspector: boolean;
-
-  // Actions
+  isPlaying: boolean;
+  reducedMotion: boolean;
+  resetKey: number;
+  motionSpeed: number;
   setCameraOn: (status: boolean) => void;
   toggleCamera: () => void;
-  setCameraError: (err: string | null) => void;
-  setDetectionResult: (params: {
+  setCameraError: (error: string | null) => void;
+  setDetectionResult: (result: {
     acquired: boolean;
     position: [number, number];
     box: [number, number, number, number] | null;
@@ -76,61 +70,78 @@ interface AppState {
   setActiveArtifact: (artifact: ArtifactType) => void;
   setColorTheme: (theme: ColorThemeType) => void;
   toggleSound: () => void;
-  setMousePosition: (pos: [number, number]) => void;
+  setMousePosition: (position: [number, number]) => void;
   toggleScanner: () => void;
   toggleInspector: () => void;
+  setIsPlaying: (playing: boolean) => void;
+  togglePlayback: () => void;
+  setReducedMotion: (reduced: boolean) => void;
+  resetView: () => void;
+  setMotionSpeed: (speed: number) => void;
 }
-
-export const useStore = create<AppState>((set) => ({
-  isCameraOn: false,
+const clearedTracking = {
   isTargetAcquired: false,
-  targetPosition: [0.5, 0.5],
+  targetPosition: [0.5, 0.5] as [number, number],
   boundingBox: null,
   confidence: 0,
   inferenceLatency: 0,
+};
+export const useStore = create<AppState>((set) => ({
+  ...clearedTracking,
+  isCameraOn: false,
   cameraError: null,
-
-  activeArtifact: 'cube',
-  colorTheme: 'obsidian',
-  soundEnabled: false, // Default off to be polite and unobtrusive
+  activeArtifact: "torus",
+  colorTheme: "emerald",
+  soundEnabled: false,
   mousePosition: [0.5, 0.5],
-
   showScanner: true,
   showInspector: false,
-
+  isPlaying: true,
+  reducedMotion: false,
+  resetKey: 0,
+  motionSpeed: 0.6,
   setCameraOn: (status) =>
-    set({
+    set((state) => ({
       isCameraOn: status,
-      isTargetAcquired: status ? undefined : false,
-      cameraError: null,
-    }),
-
+      ...clearedTracking,
+      cameraError: status ? null : state.cameraError,
+    })),
   toggleCamera: () =>
-    set((state) => {
-      const nextState = !state.isCameraOn;
-      return {
-        isCameraOn: nextState,
-        isTargetAcquired: nextState ? state.isTargetAcquired : false,
-        boundingBox: nextState ? state.boundingBox : null,
-        cameraError: null,
-      };
-    }),
-
-  setCameraError: (err) => set({ cameraError: err }),
-
+    set((state) => ({
+      isCameraOn: !state.isCameraOn,
+      ...clearedTracking,
+      cameraError: null,
+      showScanner: true,
+    })),
+  setCameraError: (cameraError) => set({ cameraError }),
   setDetectionResult: ({ acquired, position, box, confidence, latency }) =>
-    set({
-      isTargetAcquired: acquired,
-      targetPosition: position,
-      boundingBox: box,
-      confidence,
-      inferenceLatency: latency,
-    }),
-
-  setActiveArtifact: (artifact) => set({ activeArtifact: artifact }),
-  setColorTheme: (theme) => set({ colorTheme: theme }),
+    set((state) =>
+      state.isCameraOn
+        ? {
+            isTargetAcquired: acquired,
+            targetPosition: position,
+            boundingBox: acquired ? box : null,
+            confidence: acquired ? confidence : 0,
+            inferenceLatency: latency,
+          }
+        : clearedTracking,
+    ),
+  setActiveArtifact: (activeArtifact) => set({ activeArtifact }),
+  setColorTheme: (colorTheme) => set({ colorTheme }),
   toggleSound: () => set((state) => ({ soundEnabled: !state.soundEnabled })),
-  setMousePosition: (pos) => set({ mousePosition: pos }),
+  setMousePosition: (mousePosition) => set({ mousePosition }),
   toggleScanner: () => set((state) => ({ showScanner: !state.showScanner })),
-  toggleInspector: () => set((state) => ({ showInspector: !state.showInspector })),
+  toggleInspector: () =>
+    set((state) => ({ showInspector: !state.showInspector })),
+  setIsPlaying: (isPlaying) => set({ isPlaying }),
+  togglePlayback: () => set((state) => ({ isPlaying: !state.isPlaying })),
+  setReducedMotion: (reducedMotion) =>
+    set({ reducedMotion, ...(reducedMotion ? { isPlaying: false } : {}) }),
+  resetView: () =>
+    set((state) => ({
+      resetKey: state.resetKey + 1,
+      mousePosition: [0.5, 0.5],
+    })),
+  setMotionSpeed: (motionSpeed) =>
+    set({ motionSpeed: Math.max(0.1, Math.min(1, motionSpeed)) }),
 }));
